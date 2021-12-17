@@ -1,11 +1,13 @@
 mod draw;
-mod press;
+pub mod press;
 
 use termion::raw::{IntoRawMode, RawTerminal};
-use termion::input::{MouseTerminal, TermRead};
+use termion::input::MouseTerminal;
+use termion::event::Event;
 use ansi_term::Color;
-use std::io::{stdin, stdout, Stdout};
+use std::io::{stdout, Stdout};
 use std::process;
+use std::sync::mpsc::Receiver;
 
 
 // TODO: make better error system with enums
@@ -35,7 +37,7 @@ impl Tui {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self, key_rx: Receiver<Event>, comm_rx: Receiver<String>) {
         draw::hide_cursor().unwrap();
         draw::clear_screen().unwrap();
 
@@ -46,22 +48,17 @@ impl Tui {
                         self.height,
                         Color::Blue);
 
-        // NOTE: probably multithread to receive messages and update screen
         // TODO: check if terminal size changed since last iteration,
-        //       then change tui accordingly. NOTE: cannot be done until
-        //       multithreading is implemented
+        //       then change tui accordingly.
         loop {
-            let stdin = stdin();
-            for i in stdin.events() {
-                let event = i.unwrap_or_else(|e| {
-                    draw::show_cursor().unwrap();
-                    panic!("{}", e);
-                });
-
-                press::handle_event(&event);
+            if let Ok(s) = key_rx.try_recv() {
+                press::handle_event(s);
+            }
+            if let Ok(s) = comm_rx.try_recv() {
+                draw::text(self, 5, 5, s, Color::Red);
             }
         }
-    }
+   }
 
     fn quit() {
         draw::clear_screen().unwrap();

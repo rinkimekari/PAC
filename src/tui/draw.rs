@@ -3,6 +3,10 @@ use ansi_term::Color;
 use termion::{clear, cursor};
 use std::io::{self, Write};
 
+
+// TODO: separate shapes and stuff into structs
+
+
 pub fn clear_screen() -> Result<(), io::Error> {
     print!("{}{}",
            clear::All,
@@ -24,6 +28,42 @@ pub fn show_cursor() -> Result<(), io::Error> {
 pub fn move_cursor(x: u16, y: u16) -> Result<(), io::Error> {
     print!("{}", cursor::Goto(x, y));
     io::stdout().flush()
+}
+
+pub fn text(
+    tui: &Tui,
+    x: u16,
+    y: u16,
+    text: String,
+    color: Color
+) {
+    if x <= 1 || y <= 1 || x >= tui.width - 1 || y >= tui.height - 1 {
+        show_cursor().unwrap();
+        panic!("yeah out of bounds buddy");
+    }
+
+    move_cursor(x, y).unwrap();
+
+    // TODO: make line wrap work cuz im stupid
+
+    // let mut bound = 0;
+    // let mut newline_num = 2;
+
+    // for (i, c) in text.chars().enumerate() {
+    //     let i = i as u16;
+    //     if x + i >= tui.width && bound == 0 {
+    //         bound = x + i;
+    //     }
+    //     if x + i - bound * (newline_num - 1)  >= tui.width {
+    //         move_cursor(x, y + newline_num).unwrap();
+    //         newline_num += 1;
+    //     }
+    //     print!("{}", color.paint(String::from(c)));
+    // }
+
+    print!("{}", color.paint(text));
+
+    io::stdout().flush().unwrap();
 }
 
 pub fn rectangle(
