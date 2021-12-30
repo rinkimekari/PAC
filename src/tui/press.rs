@@ -1,6 +1,7 @@
 use termion::event::{Key, Event, MouseEvent};
 use termion::input::TermRead;
 use std::sync::mpsc::Sender;
+// use std::rc::Rc;
 use std::io::stdin;
 use super::Command;
 
@@ -34,6 +35,8 @@ impl KeypressHandler {
     fn process_keypress(&self, key: Key) {
         match key {
             Key::Ctrl('q') => self.event_sender.send(Command::Quit).unwrap(),
+            Key::Char(c) =>
+                self.event_sender.send(Command::PrintInput(c)).unwrap(),
             _ => {}
         }
     }

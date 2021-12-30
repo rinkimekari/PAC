@@ -1,18 +1,26 @@
 use std::io::prelude::*;
 use std::net::TcpStream;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::Receiver;
 
-pub fn connect(comm_tx: Sender<String>) {
+pub fn connect(send_message_rx: Receiver<String>) {
     let mut stream = TcpStream::connect("127.0.0.1:42069").unwrap();
-    let client_buf = "\nTEST PAC NUM 1\n";
 
-    stream.write(client_buf.as_bytes()).unwrap();
+    let header = "PAC MESSAGE ->";
+
+    let packet = format!("{}{}", header, send_message_rx.recv().unwrap());
+
+    stream.write(packet.as_bytes()).unwrap();
     stream.flush().unwrap();
 
-    // let mut buf = [0; 1024];
-    let mut response = String::new();
+    // let client_buf = "\nTEST PAC NUM 1\n";
 
-    stream.read_to_string(&mut response).unwrap();
+    // stream.write(client_buf.as_bytes()).unwrap();
+    // stream.flush().unwrap();
 
-    comm_tx.send(response).unwrap();
+    // // let mut buf = [0; 1024];
+    // let mut response = String::new();
+
+    // stream.read_to_string(&mut response).unwrap();
+
+    // comm_tx.send(response).unwrap();
 }

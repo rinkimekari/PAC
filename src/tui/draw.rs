@@ -1,58 +1,108 @@
 // use ansi_term::Color;
 use termion::{clear, cursor};
 use std::io::{self, Write};
+use super::Tui;
 
 // TODO: implement colors
 
-pub fn rectangle(
-    buff: &mut Vec<Vec<char>>,
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize)
-{
-    if x + width > buff[0].len() + 1 ||
-       y + height > buff.len() + 1
+pub trait Draw {
+    fn rectangle(
+        &mut self,
+        x: usize,
+        y: usize,
+        width: usize,
+        height: usize);
+    fn flush_buff(&self);
+    fn buff_to_string(&self) -> String;
+    fn print_input_char(&mut self, c: char);
+    fn move_cursor_index(&mut self, x: usize, y: usize);
+    fn print_char(&mut self, c: char, x: usize, y: usize);
+    fn move_input_index(&mut self, x: usize, y: usize);
+}
+
+impl Draw for Tui {
+    fn rectangle(
+        &mut self,
+        x: usize,
+        y: usize,
+        width: usize,
+        height: usize)
     {
-        panic!("rectangle was too girthy");
-    }
+        if x + width > self.buff[0].len() + 1 ||
+           y + height > self.buff.len() + 1
+        {
+            panic!("rectangle was too girthy");
+        }
 
-    if width <= 1 || height <= 1 {
-        return;
-    }
+        if width <= 1 || height <= 1 {
+            return;
+        }
 
-    // corners
-    let max_w = x + width - 1;
-    let max_h = y + height - 1;
-    buff[y][x]         = '╭';
-    buff[y][max_w]     = '╮';
-    buff[max_h][x]     = '╰';
-    buff[max_h][max_w] = '╯';
+        // corners
+        let max_w = x + width - 1;
+        let max_h = y + height - 1;
+        self.buff[y][x]         = '╭';
+        self.buff[y][max_w]     = '╮';
+        self.buff[max_h][x]     = '╰';
+        self.buff[max_h][max_w] = '╯';
 
-    for i in 1..width - 1 {
-        buff[y][x + i] = '─';
-        buff[y + height - 1][x + i] = '─';
-    }
+        for i in 1..width - 1 {
+            self.buff[y][x + i] = '─';
+            self.buff[y + height - 1][x + i] = '─';
+        }
 
-    for i in 1..height - 1 {
-        buff[y + i][x] = '│';
-        buff[y + i][x + width - 1] = '│';
-    }
-}
-
-pub fn flush_buff(buff: &Vec<Vec<char>>) {
-    print!("{}{}{}", clear::All, cursor::Goto(1, 1), buff_to_string(buff));
-    io::stdout().flush().unwrap();
-}
-
-fn buff_to_string(buff: &Vec<Vec<char>>) -> String {
-    let mut ret = String::with_capacity(buff.len() * buff[0].len());
-    for i in buff {
-        for j in i {
-            ret.push(*j);
+        for i in 1..height - 1 {
+            self.buff[y + i][x] = '│';
+            self.buff[y + i][x + width - 1] = '│';
         }
     }
-    ret
+
+    fn flush_buff(&self) {
+        print!(
+            "{}{}{}",
+            clear::All,
+            cursor::Goto(1, 1),
+            self.buff_to_string()
+        );
+        io::stdout().flush().unwrap();
+    }
+
+    fn buff_to_string(&self) -> String {
+        let mut ret = String::with_capacity(
+            self.buff.len() * self.buff[0].len()
+        );
+
+        for i in &self.buff {
+            for j in i {
+                ret.push(*j);
+            }
+        }
+        ret
+    }
+
+    fn print_input_char(&mut self, c: char) {
+        let (_before_x, _before_y) = self.cursor_index;
+        let (x, y) = self.input_index;
+        self.print_char(c, x, y);
+        //self.move_cursor(before_x, before_y);
+        self.input_buff.push(c);
+    }
+
+    fn move_cursor_index(&mut self, x: usize, y: usize) {
+        self.cursor_index = (x, y);
+    }
+
+    fn move_input_index(&mut self, x: usize, y: usize) {
+        self.input_index = (x, y);
+    }
+
+    fn print_char(&mut self, c: char, x: usize, y: usize) {
+        self.move_cursor_index(x, y);
+        self.buff[y][x] = c;
+        self.move_cursor_index(x + 1, y);
+        self.move_input_index(x + 1, y);
+        self.flush_buff();
+    }
 }
 
 

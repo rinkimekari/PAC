@@ -15,13 +15,11 @@ fn main() {
     }
 
     let (event_sender, event_listener) = mpsc::channel();
-    // let (comm_tx, comm_rx) = mpsc::channel();
+    let (comm_message_sender, comm_message_receiver) = mpsc::channel();
 
-    // let comm_thread = thread::spawn(move || {
-    //     comm::connect(comm_tx);
-    // });
-
-    // NOTE: think about whether or not to Rc the sender
+    let comm_thread = thread::spawn(move || {
+        comm::connect(comm_message_receiver);
+    });
 
     let keypress_thread = thread::spawn(move || {
         let key_handler = KeypressHandler::new(event_sender);
@@ -29,11 +27,11 @@ fn main() {
     });
 
     let tui_thread = thread::spawn(move || {
-        let mut tui = Tui::new_or(100, 80, event_listener);
+        let mut tui = Tui::new(100, 80, event_listener, comm_message_sender);
         tui.run();
     });
 
-    // comm_thread.join().unwrap();
+    comm_thread.join().unwrap();
     keypress_thread.join().unwrap();
     tui_thread.join().unwrap();
 }
