@@ -2,38 +2,47 @@ use termion::event::{Key, Event, MouseEvent};
 use termion::input::TermRead;
 use std::sync::mpsc::Sender;
 use std::io::stdin;
+use super::Command;
 
-pub fn start(key_tx: Sender<Event>) {
-    let stdin = stdin();
-    for i in stdin.events() {
-        let event = i.unwrap_or_else(|e| {
-            super::draw::show_cursor().unwrap();
-            panic!("{}", e);
-        });
-
-        key_tx.send(event).unwrap();
-    }
+pub struct KeypressHandler {
+    event_sender: Sender<Command>,
 }
 
-pub fn handle_event(event: Event) {
-    match event {
-        Event::Key(k) => process_keypress(k),
-        Event::Mouse(e) => process_mouse(e),
-        Event::Unsupported(_) => {}, // TODO,
+impl KeypressHandler {
+    pub fn new(event_sender: Sender<Command>) -> Self {
+        Self {
+            event_sender,
+        }
     }
-}
 
-fn process_keypress(key: Key) {
-    match key {
-        Key::Char('q') => super::Tui::quit(),
-        _ => { return; }
+    pub fn listen(&self) {
+        let stdin = stdin();
+        for i in stdin.events() {
+            let event = i.unwrap();
+            self.handle_event(event);
+        }
     }
-}
 
-fn process_mouse(event: MouseEvent) {
-    match event {
-        MouseEvent::Press(_button, _x, _y) => {}
-        MouseEvent::Release(_x, _y) => {}
-        MouseEvent::Hold(_x, _y) => {}
+    fn handle_event(&self, event: Event) {
+        match event {
+            Event::Key(k) => self.process_keypress(k),
+            Event::Mouse(e) => self.process_mouse(e),
+            Event::Unsupported(_) => {}, // TODO,
+        }
+    }
+
+    fn process_keypress(&self, key: Key) {
+        match key {
+            Key::Ctrl('q') => self.event_sender.send(Command::Quit).unwrap(),
+            _ => {}
+        }
+    }
+
+    fn process_mouse(&self, event: MouseEvent) {
+        match event {
+            MouseEvent::Press(_button, _x, _y) => {}
+            MouseEvent::Release(_x, _y) => {}
+            MouseEvent::Hold(_x, _y) => {}
+        }
     }
 }
