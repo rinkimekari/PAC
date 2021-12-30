@@ -1,5 +1,5 @@
 # PAC
-Painfully Awful Communicator. Communications platform focused on privacy and security, hosted on a private server, written in Rust.
+Painfully Awful Communicator. Communications platform focused on privacy, security, and ease of use. Hosted on a private server and written in Rust.
 
 # NOTE
 This is not even in beta. It's still being made, so dont try using it. It won't do what you want it to.
