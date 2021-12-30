@@ -3,24 +3,31 @@ use std::net::TcpStream;
 use std::sync::mpsc::Receiver;
 
 pub fn connect(send_message_rx: Receiver<String>) {
+
+    // TODO: MUCH BETTER ERROR HANDLING (stream not open, closed stream, etc.)
+    // TODO: implement actually decent logging
+
     let mut stream = TcpStream::connect("127.0.0.1:42069").unwrap();
 
     let header = "PAC MESSAGE ->";
 
-    let packet = format!("{}{}", header, send_message_rx.recv().unwrap());
+    loop {
+        let packet = format!("{}{}", header, send_message_rx.recv().unwrap());
 
-    stream.write(packet.as_bytes()).unwrap();
-    stream.flush().unwrap();
+        stream.write(packet.as_bytes()).unwrap();
+        stream.flush().unwrap();
 
-    // let client_buf = "\nTEST PAC NUM 1\n";
+        // TODO: fix response issues
 
-    // stream.write(client_buf.as_bytes()).unwrap();
-    // stream.flush().unwrap();
+        // let mut response = String::new();
+        // stream.read_to_string(&mut response).unwrap();
 
-    // // let mut buf = [0; 1024];
-    // let mut response = String::new();
-
-    // stream.read_to_string(&mut response).unwrap();
-
-    // comm_tx.send(response).unwrap();
+        let before_log = if let Ok(s) = std::fs::read_to_string("pac-log.log") {
+            s
+        } else {
+            String::new()
+        };
+        let log_contents = format!("{}\n{}", before_log, packet);
+        std::fs::write("pac-log.log", log_contents).unwrap();
+    }
 }

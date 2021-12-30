@@ -10,6 +10,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use draw::Draw;
 
 
+// TODO: make welcome screen
 // TODO: make better error system with enums
 
 
@@ -136,12 +137,21 @@ impl Tui {
     }
 
     fn send_message(&mut self) {
+        if self.input_buff.is_empty() { return; }
+
         self.comm_message_sender.send(
             String::from(self.input_buff.as_str())
         ).unwrap();
+
+        self.reset_input();
+    }
+
+    fn reset_input(&mut self) {
         self.input_buff.clear();
         self.move_cursor_index(2, self.height - 3);
         self.move_input_index(2, self.height - 3);
+        self.clear_partial_line(2, self.width - 2, self.height - 3);
+        self.flush_buff();
     }
 
     fn quit() {

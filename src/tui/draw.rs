@@ -18,6 +18,7 @@ pub trait Draw {
     fn move_cursor_index(&mut self, x: usize, y: usize);
     fn print_char(&mut self, c: char, x: usize, y: usize);
     fn move_input_index(&mut self, x: usize, y: usize);
+    fn clear_partial_line(&mut self, x: usize, max_x: usize, y: usize);
 }
 
 impl Draw for Tui {
@@ -81,10 +82,13 @@ impl Draw for Tui {
     }
 
     fn print_input_char(&mut self, c: char) {
-        let (_before_x, _before_y) = self.cursor_index;
+        let (before_x, before_y) = self.cursor_index;
         let (x, y) = self.input_index;
+
+        if x == self.width - 2 { return; }
+
         self.print_char(c, x, y);
-        //self.move_cursor(before_x, before_y);
+        self.move_cursor_index(before_x, before_y);
         self.input_buff.push(c);
     }
 
@@ -102,6 +106,12 @@ impl Draw for Tui {
         self.move_cursor_index(x + 1, y);
         self.move_input_index(x + 1, y);
         self.flush_buff();
+    }
+
+    fn clear_partial_line(&mut self, x: usize, max_x: usize, y: usize) {
+        for i in x..max_x {
+            self.buff[y][i] = ' ';
+        }
     }
 }
 
