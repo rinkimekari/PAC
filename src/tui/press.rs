@@ -37,6 +37,8 @@ impl KeypressHandler {
             Key::Ctrl('q') => self.event_sender.send(Command::Quit).unwrap(),
             Key::Char(c) =>
                 self.event_sender.send(Command::PrintInput(c)).unwrap(),
+            Key::Backspace =>
+                self.event_sender.send(Command::DeleteInputChar).unwrap(),
             _ => {}
         }
     }

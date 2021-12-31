@@ -10,21 +10,22 @@ use std::sync::mpsc::{Receiver, Sender};
 use draw::Draw;
 
 
-// TODO: make welcome screen
+// TODO: change to using self.cursor_index index of passing x and y parameters
+// TODO: make line_update and char_update functions
 // TODO: make better error system with enums
 
 
 const LOGO_ASCII: &'static str =
-"    _/_/_/      _/_/      _/_/_/\r
-   _/    _/  _/    _/  _/\r
-  _/_/_/    _/_/_/_/  _/\r
- _/        _/    _/  _/\r
-_/        _/    _/    _/_/_/\r\
-";
+"    _/_/_/      _/_/      _/_/_/
+   _/    _/  _/    _/  _/
+  _/_/_/    _/_/_/_/  _/
+ _/        _/    _/  _/
+_/        _/    _/    _/_/_/";
 
 pub enum Command {
     Quit,
     PrintInput(char),
+    DeleteInputChar,
 }
 
 pub struct Tui {
@@ -37,6 +38,8 @@ pub struct Tui {
     cursor_index: (usize, usize),
     input_index: (usize, usize),
     input_buff: String,
+    split_width: usize,
+    split_height: usize,
 }
 
 impl Tui {
@@ -70,6 +73,14 @@ impl Tui {
         let input_index = (0, 0);
         let input_buff = String::new();
 
+        let split_width = if width >> 2 > 15 {
+            (width ) >> 2
+        } else {
+            0
+        };
+
+        let split_height = height - 5;
+
         Self {
             width,
             height,
@@ -80,41 +91,46 @@ impl Tui {
             cursor_index,
             input_index,
             input_buff,
+            split_width,
+            split_height,
         }
     }
 
     fn init_screen(&mut self) {
+        print!("{}", termion::cursor::Hide);
+        io::stdout().flush().unwrap();
         self.create_layout();
+        self.logo();
         self.flush_buff();
     }
 
+    fn logo(&mut self) {
+        let logo: Vec<&str> = LOGO_ASCII.split('\n').collect();
+        self.cursor_index = (self.split_width + 5, 3);
+        self.write_text(String::from("Welcome to"));
+        self.cursor_index.1 += 2;
+        for i in 0..logo.len() {
+            self.write_text(String::from(logo[i]));
+            self.cursor_index.1 += 1;
+        }
+    }
+
     fn create_layout(&mut self) {
-        let split_width = if self.width >> 2 > 15 {
-            (self.width ) >> 2
-        } else {
-            0
-        };
-
-        let split_height = if self.height - 5 > 15 {
-            self.height - 5
-        } else {
-            0
-        };
-
         self.rectangle(0, 0, self.width, self.height);
-        self.rectangle(1, 1, split_width, split_height);
-        self.rectangle(1, self.height - 4, self.width - 2, 3);
+        self.frame(1, 1, self.split_width, self.split_height, String::from("Friends"));
+        self.frame(1, self.height - 4, self.width - 2, 3, String::from("Input"));
 
-        let chat_box_x = if split_width == 0 || split_height == 0 {
+        let chat_box_x = if self.split_width == 0 {
             1
         } else {
-            split_width + 2
+            self.split_width + 2
         };
 
-        self.rectangle(chat_box_x,
+        self.frame(chat_box_x,
                        1,
                        self.width - chat_box_x - 1,
-                       self.height - 5);
+                       self.split_height,
+                       String::from("Chat"));
 
         self.input_index = (2, self.height - 3);
     }
@@ -131,9 +147,18 @@ impl Tui {
                         '\n' => self.send_message(),
                         _ => self.print_input_char(c),
                     }
+                    Command::DeleteInputChar => self.del_in_char(),
                 }
             }
         }
+    }
+
+    fn del_in_char(&mut self) {
+        if self.input_index.0 == 2 { return; }
+        self.input_buff.pop();
+        self.buff[self.input_index.1][self.input_index.0 - 1] = ' ';
+        self.input_index = (self.input_index.0 - 1, self.input_index.1);
+        self.flush_buff();
     }
 
     fn send_message(&mut self) {
@@ -148,47 +173,14 @@ impl Tui {
 
     fn reset_input(&mut self) {
         self.input_buff.clear();
-        self.move_cursor_index(2, self.height - 3);
-        self.move_input_index(2, self.height - 3);
-        self.clear_partial_line(2, self.width - 2, self.height - 3);
+        self.input_index = (2, self.height - 3);
+        self.write_partial_line(2, self.width - 2, self.height - 3, ' ');
         self.flush_buff();
     }
 
     fn quit() {
-        print!("{}{}", termion::clear::All, termion::cursor::Goto(1, 1));
+        print!("{}{}{}", termion::clear::All, termion::cursor::Goto(1, 1), termion::cursor::Show);
         io::stdout().flush().unwrap();
         process::exit(0);
     }
 }
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-// old code just in case - not used or needed
-
-//pub fn start(tui: Rc<Tui>, key_rx: Receiver<Event>, comm_rx: Receiver<String>) {
-//    draw::hide_cursor().unwrap();
-//    draw::clear_screen().unwrap();
-//
-//    let rect = draw::Rectangle::new(
-//        Rc::clone(&tui),
-//        1, // remember: ansi coords start at 1
-//        1,
-//        tui.width,
-//        tui.height,
-//        Color::Blue
-//    );
-//
-//    rect.draw();
-//
-//    // TODO: check if terminal size changed since last iteration,
-//    //       then change tui accordingly.
-//    loop {
-//        if let Ok(s) = key_rx.try_recv() {
-//            press::handle_event(s);
-//        }
-//        if let Ok(s) = comm_rx.try_recv() {
-//            draw::text(Rc::clone(&tui), 5, 5, s, Color::Red);
-//        }
-//    }
-//}

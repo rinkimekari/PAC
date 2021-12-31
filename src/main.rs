@@ -5,7 +5,6 @@ mod comm;
 use tui::Tui;
 use std::thread;
 use std::sync::mpsc;
-// use std::rc::Rc;
 use tui::press::KeypressHandler;
 
 fn main() {

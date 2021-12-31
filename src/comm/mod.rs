@@ -4,6 +4,7 @@ use std::sync::mpsc::Receiver;
 
 pub fn connect(send_message_rx: Receiver<String>) {
 
+    // TODO: create specs for the protocol and implement them
     // TODO: MUCH BETTER ERROR HANDLING (stream not open, closed stream, etc.)
     // TODO: implement actually decent logging
 
